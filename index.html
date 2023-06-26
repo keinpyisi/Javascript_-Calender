@@ -54,7 +54,7 @@ const holidays = [
 
 function main() {
   const year = 2023;
-  const month=7;
+  const month=8;
 
   // Initialize Calendar
   init();
@@ -79,12 +79,12 @@ function getOneMonth(calendar,month,year){
   var jsonArr =[];
   const obj=JSON.parse(calendar);
   var start=0;
+  var finalyoubi=0;
   for(var data=0;data<obj.length;data++){
     if(parseInt(obj[data].month)==parseInt(month)){
       var jsonData={};
      
       if(start==0){
-        console.log(obj[data].youbi_code);
         for (let i = obj[data].youbi_code-1; i >= W_LIST.SUN; i--) {
                 
                 jsonData["day"] = null;
@@ -101,11 +101,25 @@ function getOneMonth(calendar,month,year){
       jsonData["month"]=obj[data].month;
       jsonData["year"]=year;
       jsonData["code"]=obj[data].youbi_code;
+      finalyoubi=obj[data].youbi_code;
       jsonArr.push(jsonData);
     }
   
   }
+  
+  for (let i = finalyoubi+1; i<=W_LIST.SAT; i++) {
+                var jsonData = {};
+                jsonData["day"] = null;
+                jsonData["month"]=null;
+                jsonData["year"]=year;
+                jsonData["code"]=finalyoubi;
+                jsonData["youbi"]=getKeyByValue(W_LIST,i);
+                jsonArr.push(jsonData);             
+  }
+  
+  
   console.log(jsonArr);
+  console.log(finalyoubi);
 
 }
 function getKeyByValue(object, value) {
