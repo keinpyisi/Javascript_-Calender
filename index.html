@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+    <title>
+        Test
+    </title>
+    <body>
+
+    </body>
+    <script>
+ const N_MONTH = 12;
+const WEEKS = 6;
+const N_WEEK = 7;
+const MAX_HOLI_TBL = 4;
+const SPRING_EQ = 0;
+const FALL_EQ = 1;
+const BIRTH_MARK = 0x80; // 誕生日マーク
+const TRANS_MARK = 0x40; // 振替祝日マーク
+const HOLI_MARK = 0x20; // 祝日マーク
+const MAX_COL = 4;
+const COLOR_RED = "\u001b[31m"; // 赤色
+const COLOR_BLUE = "\u001b[34m"; // 青色
+const COLOR_WHITE = "\u001b[37m"; // 白色
+
+const M_LIST = { JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11 };
+const W_LIST = { SUN: 0, MON: 1, TUE: 2, WED: 3, THU: 4, FRI: 5, SAT: 6 };
+
+// Per month day
+const mdays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+// Calendar Table
+const cal_tbl = new Array(N_MONTH);
+for (let i = 0; i < N_MONTH; i++) {
+  cal_tbl[i] = new Array(WEEKS);
+  for (let j = 0; j < WEEKS; j++) {
+    cal_tbl[i][j] = new Array(N_WEEK).fill(0);
+  }
+}
+
+// 祝日のデータテーブル
+const holidays = [
+  [1, -2, 0, 0],    //  1月、元旦、成人の日
+  [11, 23, 0, 0],   //  2月、建国記念日、令和天皇誕生日
+  [21, 0, 0, 0],    //  3月、春分の日(計算で算出)
+  [29, 0, 0, 0],    //  4月、昭和の日
+  [3, 4, 5, 0],     //  5月、憲法記念日、みどりの日、子供の日
+  [0, 0, 0, 0],     //  6月、なし
+  [-3, 0, 0, 0],    //  7月、海の日
+  [11, 0, 0, 0],    //  8月、山の日
+  [-3, 23, 0, 0],   //  9月、敬老の日、秋分の日(計算で算出)
+  [-2, 0, 0, 0],    // 10月、体育の日
+  [3, 23, 0, 0],    // 11月、文化の日、勤労感謝の日
+  [23, -2, 0, 0]    // 12月、天皇誕生日、年末年始
+];
+
+function main() {
+  const year = 2023;
+  const month=7;
+
+  // Initialize Calendar
+  init();
+
+  // Calculating Days Up to Last Year
+  const cumulativedays = CumulativeDays(year);
+
+  // If Year is a leap year
+  mdays[M_LIST.FEB] = leap_year(year) ? 29 : 28;
+
+  // Autumn Day
+  vernal_autumnal(year);
+
+  // Make Calendar
+  var calender=make_calendar(cal_tbl, (cumulativedays + 1) % 7,year);
+  getOneMonth(calender,month,year);
+
+  // Show Calendar
+// print_cal(cal_tbl, (cumulativedays + 1) % 7, year);
+}
+function getOneMonth(calendar,month,year){
+  var jsonArr =[];
+  const obj=JSON.parse(calendar);
+  var start=0;
+  for(var data=0;data<obj.length;data++){
+    if(parseInt(obj[data].month)==parseInt(month)){
+      var jsonData={};
+     
+      if(start==0){
+        console.log(obj[data].youbi_code);
+        for (let i = obj[data].youbi_code-1; i >= W_LIST.SUN; i--) {
+                
+                jsonData["day"] = null;
+                jsonData["month"]=null;
+                jsonData["youbi"]=getKeyByValue(W_LIST,i);
+                jsonArr.push(jsonData);
+                var jsonData = {};
+      }
+      jsonArr.reverse();
+        start=1;
+      }
+      jsonData["youbi"]=obj[data].youbi;
+      jsonData["day"] = obj[data].day;
+      jsonData["month"]=obj[data].month;
+      jsonData["year"]=year;
+      jsonData["code"]=obj[data].youbi_code;
+      jsonArr.push(jsonData);
+    }
+  
+  }
+  console.log(jsonArr);
+
+}
+function getKeyByValue(object, value) {
+  return Object.keys(object).find(key => object[key] === value);
+}
+
+function init() {
+  for (let i = 0; i < N_MONTH; i++) {
+    for (let j = 0; j < WEEKS; j++) {
+      for (let k = 0; k < N_WEEK; k++) {
+        cal_tbl[i][j][k] = 0;
+      }
+    }
+  }
+}
+
+function make_calendar(cal_tbl, youbi,year) {
+    var jsonArr=[];
+  for (let month = M_LIST.JAN; month <= M_LIST.DEC; month++) {
+    let day = 1;
+    let line = 0;
+    let holiday = 0;
+    let monday = 0;
+//    var start=0;
+
+    while (day <= mdays[month]) {
+        var jsonData = {};
+      if (youbi === W_LIST.MON) {
+        monday++;
+      }
+   
+      cal_tbl[month][line][youbi] |= day;
+      if(leap_year(year)){
+        var you=youbi-1;
+        if(you==-1){
+                you=0;
+        }
+        jsonData["day"] = day;
+        jsonData["month"]=month+1;
+        jsonData["year"]=year;
+        jsonData["youbi"]=getKeyByValue(W_LIST,you);
+        jsonData["youbi_code"]=you;
+      }else{
+        jsonData["day"] = day;
+        jsonData["month"]=month+1;
+        jsonData["year"]=year;
+        jsonData["youbi"]=getKeyByValue(W_LIST,youbi);
+        jsonData["youbi_code"]=youbi;
+      }
+   
+      jsonArr.push(jsonData);
+     
+      day++;
+      youbi++;
+      if (youbi > W_LIST.SAT) {
+        youbi = W_LIST.SUN;
+        line++;
+      }
+    }
+  }
+//  console.log(jsonArr);
+  return JSON.stringify(jsonArr);
+}
+
+
+function CumulativeDays(year) {
+  let total = year - 1;
+  total *= 365;
+  total += Math.floor(year / 4);
+  total -= Math.floor(year / 100);
+  total += Math.floor(year / 400);
+  return total;
+}
+
+function leap_year(year) {
+  let result = 0;
+  if (year % 4 === 0) {
+    result = 1;
+  }
+  if (year % 100 === 0) {
+    result = 0;
+  }
+  if (year % 400 === 0) {
+    result = 1;
+  }
+  return result;
+}
+
+function put_char(space, num) {
+  for (let cnt = 0; cnt <= num; cnt++) {
+    console.log(space);
+  }
+}
+
+function vernal_autumnal(year) {
+  let springEQ;
+  let fallEQ;
+
+  if (year <= 1899) {
+    springEQ = Math.floor(19.8277 + 0.242194 * (year - 1980.0) - ((year - 1980.0) / 4.0));
+    fallEQ = Math.floor(22.2588 + 0.242194 * (year - 1980.0) - ((year - 1980.0) / 4.0));
+  } else if (year <= 2099) {
+    springEQ = Math.floor(20.8357 + 0.242194 * (year - 1980.0) - ((year - 1980.0) / 4.0));
+    fallEQ = Math.floor(23.2588 + 0.242194 * (year - 1980.0) - ((year - 1980.0) / 4.0));
+  } else if (year <= 2150) {
+    springEQ = Math.floor(21.8510 + 0.242194 * (year - 1980.0) - ((year - 1980.0) / 4.0));
+    fallEQ = Math.floor(24.2488 + 0.242194 * (year - 1980.0) - ((year - 1980.0) / 4.0));
+  } else {
+    springEQ = Math.floor(21.8510 + 0.242194 * (year - 1980.0) - ((year - 1980.0) / 4.0));
+    fallEQ = Math.floor(24.2488 + 0.242194 * (year - 1980.0) - ((year - 1980.0) / 4.0));
+    const term = year - 2150;
+    springEQ -= Math.floor(term / 100.0);
+    fallEQ -= Math.floor(term / 100.0);
+    springEQ += Math.floor(term / 400.0);
+    fallEQ += Math.floor(term / 400.0);
+  }
+
+  holidays[M_LIST.MAR][SPRING_EQ] = springEQ;
+  holidays[M_LIST.SEP][FALL_EQ] = fallEQ;
+}
+
+main();
+
+      
+
+    </script>
+</html>
